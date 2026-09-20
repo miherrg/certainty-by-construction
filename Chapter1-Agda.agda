@@ -76,3 +76,20 @@ module Sandbox-Tuples where
   data _⊎_ (A B : Set) : Set where
     ι₁ : A → A ⊎ B
     ι₂ : B → A ⊎ B
+
+  curry : {A B C : Set} → (A × B → C) → (A → B → C)
+  curry f a b = f (a , b)
+
+  uncurry : {A B C : Set} → (A → B → C) → (A × B → C)
+  uncurry f (a , b) = f a b
+
+-- Export to other chapters
+open import Data.Bool
+  using (Bool; false; true; not; _∧_; _∨_)
+  public
+open import Data.Product
+  using (_×_; _,_; proj₁; proj₂; curry; uncurry)
+  public
+open import Data.Sum
+  using (_⊎_; inj₁; inj₂)
+  public
