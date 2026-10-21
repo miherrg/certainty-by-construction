@@ -57,3 +57,131 @@ module Sandbox-Relations where
 
   Transitive : Rel A ℓ → Set _
   Transitive {A = A} _~_ = {x y z : A} → x ~ y → y ~ z → x ~ z
+
+open import Relation.Binary
+  using (Rel; Reflexive; Symmetric; Transitive)
+
+module Definition-LessThenOrEqualTo where
+  data _≤_ : Rel ℕ lzero where
+    z≤n : {n : ℕ} → zero ≤ n
+    s≤s : {n m : ℕ} → n ≤ m → suc n ≤ suc m
+  infix 4 _≤_
+
+  _ : 2 ≤ 5
+  _ = s≤s (s≤s z≤n)
+
+open import Data.Nat
+  using (_≤_; z≤n; s≤s)
+
+module Sandbox-≤ where
+
+  suc-mono : {x y : ℕ} → x ≤ y → suc x ≤ suc y
+  suc-mono x≤y = s≤s x≤y
+
+  ≤-refl : Reflexive _≤_
+  ≤-refl {zero} = z≤n
+  ≤-refl {suc x} = s≤s ≤-refl
+
+  ≤-trans : Transitive _≤_
+  ≤-trans z≤n q = z≤n
+  ≤-trans (s≤s p) (s≤s q) = s≤s (≤-trans p q)
+
+module Sandbox-Preorders where
+  open Sandbox-≤
+
+  record IsPreorder {A : Set a} (_~_ : Rel A ℓ) : Set (a ⊔ ℓ) where
+    field
+      refl : Reflexive _~_
+      trans : Transitive _~_
+  ≤-preorder : IsPreorder _≤_
+  IsPreorder.refl ≤-preorder = ≤-refl
+  IsPreorder.trans ≤-preorder = ≤-trans
+
+  module Preorder-Reasoning
+    {_~_ : Rel A ℓ} (~-preorder : IsPreorder _~_) where
+    open IsPreorder ~-preorder public
+
+    begin_ : {x y : A} → x ~ y → x ~ y
+    begin x~y = x~y
+    infix 1 begin_
+
+    _∎ : (x : A) → x ~ x
+    _∎ x = refl
+    infix 3 _∎
+
+    _≡⟨⟩_ : (x : A) → {y : A} → x ~ y → x ~ y
+    x ≡⟨⟩ p = p
+    infixr 2 _≡⟨⟩_
+
+    _≈⟨_⟩_ : (x : A) → ∀ {y z} → x ~ y → y ~ z → x ~ z
+    _ ≈⟨ x~y ⟩ y~z = trans x~y y~z
+    infixr 2 _≈⟨_⟩_
+
+    _≡⟨_⟩_ : (x : A) → ∀ {y z} → x ≡ y → y ~ z → x ~ z
+    _ ≡⟨ PropEq.refl ⟩ y~z = y~z
+    infixr 2 _≡⟨_⟩_
+
+  module ≤-Reasoning where
+    open Preorder-Reasoning ≤-preorder
+      renaming (_≈⟨_⟩_ to _≤⟨_⟩_)
+      public
+
+  Antisymmetric : Rel A ℓ₁ → Rel A ℓ₂ → Set _
+  Antisymmetric _≈_ _≤_ = ∀ {x y} → x ≤ y → y ≤ x → x ≈ y
+
+  module _ {a ℓ : Level} {A : Set a} (_~_ : Rel A ℓ) where
+    record IsEquivalence : Set (a ⊔ ℓ) where
+      field
+        isPreorder : IsPreorder _~_
+        sym        : Symmetric  _~_
+      open IsPreorder isPreorder public
+
+    record IsPartialOrder : Set (a ⊔ ℓ) where
+      field
+        isPreorder : IsPreorder _~_
+        antisym    : Antisymmetric _≡_ _~_
+      open IsPreorder isPreorder public
+    
+  ≡-preorder : IsPreorder (_≡_ {A = A})
+  ≡-preorder .IsPreorder.refl = PropEq.refl
+  ≡-preorder .IsPreorder.trans = PropEq.trans
+
+  ≡-equiv : IsEquivalence (_≡_ {A = A})
+  ≡-equiv .IsEquivalence.isPreorder = ≡-preorder
+  ≡-equiv .IsEquivalence.sym = PropEq.sym
+
+  ≤-antisym : Antisymmetric _≡_ _≤_
+  ≤-antisym {x} {y} z≤n z≤n = PropEq.refl
+  ≤-antisym {x} {y} (s≤s p) (s≤s q) = PropEq.cong suc (≤-antisym p q)
+
+  ≤-poset : IsPartialOrder _≤_
+  ≤-poset .IsPartialOrder.isPreorder = ≤-preorder
+  ≤-poset .IsPartialOrder.antisym = ≤-antisym
+
+open import Agda.Primitive
+  using (Level; _⊔_; lzero; lsuc)
+  public
+
+open import Data.Product
+  using (Σ; _,_)
+  public
+
+open import Relation.Binary
+  using (Rel; REL; Transitive; Reflexive; Symmetric; Antisymmetric)
+  public
+
+open import Data.Nat
+  using (_≤_; z≤n; s≤s; _<_)
+  public
+
+open import Data.Nat.Properties
+  using (≤-refl; ≤-trans; ≤-antisym; n≤1+n; module ≤-Reasoning)
+  public
+
+open Sandbox-Preorders
+  using (IsPreorder; IsEquivalence; IsPartialOrder
+        ; module Preorder-Reasoning
+        ; ≡-preorder; ≡-equiv
+        ; ≤-preorder; ≤-poset
+        )
+  public
