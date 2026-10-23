@@ -103,4 +103,39 @@ module ℕ/nℕ (n : ℕ) where
   suc-injective-mod : {a b : ℕ} → suc a ≈ suc b → a ≈ b
   suc-injective-mod (≈-mod x y is-mod) = ≈-mod x y (suc-injective is-mod)
 
+  +-cong₂-mod : {a b c d : ℕ} → a ≈ b → c ≈ d → a + c ≈ b + d
+  +-cong₂-mod {zero} {b} {c} {d} a≈b c≈d = begin (
+    c ≈⟨ c≈d ⟩
+    d ≈⟨ sym (+-zero-mod b d (sym a≈b)) ⟩
+    b + d ∎
+    ) where open Mod-Reasoning
+  +-cong₂-mod {suc a} {zero} {c} {d} a≈b c≈d = ≈-sym (begin (
+    d ≈⟨ sym c≈d ⟩
+    c ≈⟨ sym (+-zero-mod (suc a) c a≈b) ⟩
+    suc a + c ∎
+    )) where open Mod-Reasoning
+  +-cong₂-mod {suc a} {suc b} {c} {d} a≈b c≈d = suc-cong-mod (+-cong₂-mod (suc-injective-mod a≈b) c≈d)
   
+  *-zero-mod : (a b : ℕ) → b ≈ 0 → a * b ≈ 0
+  *-zero-mod zero b p = refl
+  *-zero-mod (suc a) b p = begin (
+    b + a * b ≈⟨ +-zero-mod b (a * b) p ⟩
+    a * b ≈⟨ *-zero-mod a b p ⟩
+    0 ∎
+    ) where open Mod-Reasoning
+
+  *-cong₂-mod : {a b c d : ℕ} → a ≈ b → c ≈ d → a * c ≈ b * d
+  *-cong₂-mod {zero} {b} {c} {d} pab pcd = sym (begin (
+    b * d ≡⟨ *-comm b d ⟩
+    d * b ≈⟨ *-zero-mod d b (sym pab) ⟩
+    0 ∎
+    )) where open Mod-Reasoning
+  *-cong₂-mod {suc a} {zero} {c} {d} pab pcd = (begin (
+    suc a * c ≡⟨ *-comm (suc a) c ⟩
+    c * suc a ≈⟨ *-zero-mod c (suc a) pab ⟩
+    0 ∎
+    )) where open Mod-Reasoning
+  *-cong₂-mod {suc a} {suc b} {c} {d} pab pcd = (begin (
+    c + a * c ≈⟨ +-cong₂-mod pcd (*-cong₂-mod (suc-injective-mod pab) pcd) ⟩
+    d + b * d ∎
+    )) where open Mod-Reasoning
